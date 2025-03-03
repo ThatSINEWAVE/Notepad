@@ -3,35 +3,39 @@ from tkinter import ttk, filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
 from PIL import Image, ImageTk
 
-
 class ModernNotepad:
     def __init__(self, root):
         self.root = root
         self.root.title("Modern Notepad")
         self.root.geometry("1200x800")
         self.root.configure(bg="#1e1e1e")
-        self.root.iconbitmap('icon.ico')
+        try:
+            self.root.iconbitmap('icon.ico')
+        except Exception as e:
+            print(f"Error loading icon: {e}")
         self.root.overrideredirect(True)
 
-        # Color scheme
+        # Modern color scheme
         self.bg_color = "#252526"
-        self.title_bar_color = "#3c3c3c"
+        self.title_bar_color = "#333333"
         self.text_bg = "#1e1e1e"
-        self.fg_color = "#d4d4d4"
-        self.accent_color = "#37373d"
-        self.hover_color = "#2a2d2e"
+        self.fg_color = "#e8e8e8"
+        self.accent_color = "#007acc"
         self.tab_bg = "#2d2d2d"
         self.scroll_color = "#454545"
-        self.highlight_color = "#007acc"
-        self.button_hover = "#505050"
         self.close_hover = "#e81123"
+        self.button_hover = "#404040"
+        self.new_tab_color = "#333333"
+        self.tab_border = "#3c3c3c"
+        self.selected_tab_color = "#37373d"
 
         self.is_maximized = False
         self.prev_geometry = ""
         self.x = 0
         self.y = 0
+        self.tabs = []
+        self.current_tab = None
 
-        # Load icon
         try:
             self.app_icon = ImageTk.PhotoImage(Image.open('icon.ico').resize((20, 20)))
         except Exception as e:
@@ -47,23 +51,35 @@ class ModernNotepad:
         self.style = ttk.Style()
         self.style.theme_use('clam')
 
-        self.style.configure("TNotebook", background=self.bg_color, borderwidth=0)
+        # Notebook styling
+        self.style.configure("TNotebook",
+                            background=self.bg_color,
+                            borderwidth=0,
+                            tabmargins=[0, 0, 0, 0])
         self.style.configure("TNotebook.Tab",
-                             background=self.tab_bg,
-                             foreground=self.fg_color,
-                             padding=[20, 8],
-                             font=("Segoe UI", 10),
-                             borderwidth=0)
+                            background=self.tab_bg,
+                            foreground=self.fg_color,
+                            padding=[0, 0],
+                            borderwidth=0,
+                            focuscolor=self.bg_color,
+                            font=("Segoe UI", 10))
         self.style.map("TNotebook.Tab",
-                       background=[("selected", self.bg_color)],
-                       expand=[("selected", [1, 1, 1, 0])])
+                      background=[("selected", self.bg_color)],
+                      expand=[("selected", [0])])
 
+        # Scrollbar styling
         self.style.configure("Modern.Vertical.TScrollbar",
-                             gripcount=0,
-                             width=10,
-                             arrowsize=14,
-                             background=self.scroll_color,
-                             troughcolor=self.bg_color)
+                            gripcount=0,
+                            width=12,
+                            arrowsize=0,
+                            troughcolor=self.bg_color,
+                            bordercolor=self.bg_color,
+                            relief="flat",
+                            darkcolor=self.scroll_color,
+                            lightcolor=self.scroll_color)
+        self.style.map("Modern.Vertical.TScrollbar",
+                      darkcolor=[("active", "#606060")],
+                      lightcolor=[("active", "#606060")])
 
     def create_widgets(self):
         # Title Bar
@@ -74,16 +90,13 @@ class ModernNotepad:
         self.drag_area = tk.Frame(self.title_bar, bg=self.title_bar_color)
         self.drag_area.pack(side='left', expand=True, fill='both')
 
-        # App Icon
         if self.app_icon:
-            icon_label = tk.Label(self.drag_area, image=self.app_icon,
-                                  bg=self.title_bar_color)
+            icon_label = tk.Label(self.drag_area, image=self.app_icon, bg=self.title_bar_color)
             icon_label.pack(side='left', padx=10)
 
-        # Title
         title_label = tk.Label(self.drag_area, text="Modern Notepad",
-                               bg=self.title_bar_color, fg=self.fg_color,
-                               font=("Segoe UI", 10))
+                              bg=self.title_bar_color, fg=self.fg_color,
+                              font=("Segoe UI", 10))
         title_label.pack(side='left')
 
         # Window Controls
@@ -91,27 +104,24 @@ class ModernNotepad:
         control_frame.pack(side='right', padx=0)
 
         # Minimize Button
-        self.min_btn = tk.Label(control_frame, text="─",
-                                bg=self.title_bar_color, fg=self.fg_color,
-                                font=("Segoe UI", 12), cursor="hand2")
+        self.min_btn = tk.Label(control_frame, text="─", bg=self.title_bar_color, fg=self.fg_color,
+                               font=("Segoe UI", 14), cursor="hand2")
         self.min_btn.pack(side='left', padx=15, ipadx=5)
         self.min_btn.bind("<Button-1>", lambda e: self.root.iconify())
         self.min_btn.bind("<Enter>", lambda e: self.min_btn.config(bg=self.button_hover))
         self.min_btn.bind("<Leave>", lambda e: self.min_btn.config(bg=self.title_bar_color))
 
         # Maximize Button
-        self.max_btn = tk.Label(control_frame, text="□",
-                                bg=self.title_bar_color, fg=self.fg_color,
-                                font=("Segoe UI", 10), cursor="hand2")
+        self.max_btn = tk.Label(control_frame, text="□", bg=self.title_bar_color, fg=self.fg_color,
+                               font=("Segoe UI", 12), cursor="hand2")
         self.max_btn.pack(side='left', padx=0, ipadx=5)
         self.max_btn.bind("<Button-1>", lambda e: self.toggle_maximize())
         self.max_btn.bind("<Enter>", lambda e: self.max_btn.config(bg=self.button_hover))
         self.max_btn.bind("<Leave>", lambda e: self.max_btn.config(bg=self.title_bar_color))
 
         # Close Button
-        self.close_btn = tk.Label(control_frame, text="×",
-                                  bg=self.title_bar_color, fg=self.fg_color,
-                                  font=("Segoe UI", 16), cursor="hand2")
+        self.close_btn = tk.Label(control_frame, text="×", bg=self.title_bar_color, fg=self.fg_color,
+                                font=("Segoe UI", 16), cursor="hand2")
         self.close_btn.pack(side='left', padx=15, ipadx=5)
         self.close_btn.bind("<Button-1>", lambda e: self.root.destroy())
         self.close_btn.bind("<Enter>", lambda e: self.close_btn.config(bg=self.close_hover, fg="white"))
@@ -134,25 +144,35 @@ class ModernNotepad:
         ]
 
         for text, cmd in actions:
-            btn = tk.Label(btn_frame, text=text,
-                           bg=self.title_bar_color, fg=self.fg_color,
-                           font=("Segoe UI", 10), cursor="hand2")
+            btn = tk.Label(btn_frame, text=text, bg=self.title_bar_color, fg=self.fg_color,
+                         font=("Segoe UI", 10), cursor="hand2")
             btn.pack(side='left', padx=15)
             btn.bind("<Button-1>", lambda e, c=cmd: c())
             btn.bind("<Enter>", lambda e, b=btn: b.config(bg=self.button_hover))
             btn.bind("<Leave>", lambda e, b=btn: b.config(bg=self.title_bar_color))
 
-        # Notebook
+        # Custom Tab Bar
+        self.tab_bar = tk.Frame(self.root, bg=self.bg_color)
+        self.tab_bar.pack(fill='x', side='top')
+
+        # Notebook (hidden native tabs)
         self.notebook = ttk.Notebook(self.root, style="TNotebook")
-        self.notebook.pack(fill='both', expand=True, padx=5, pady=(0, 5))
-        self.notebook.bind("<<NotebookTabChanged>>", self.on_tab_changed)
+        self.notebook.pack(fill='both', expand=True, padx=0, pady=0)
+
+        # New Tab Button
+        self.new_tab_btn = tk.Label(self.tab_bar, text="+", bg=self.tab_bg, fg=self.fg_color,
+                                  font=("Segoe UI", 14), padx=10, cursor="hand2")
+        self.new_tab_btn.pack(side='left', padx=(0, 5))
+        self.new_tab_btn.bind("<Button-1>", lambda e: self.new_tab())
+        self.new_tab_btn.bind("<Enter>", lambda e: e.widget.config(bg=self.button_hover))
+        self.new_tab_btn.bind("<Leave>", lambda e: e.widget.config(bg=self.tab_bg))
 
         # Status Bar
         self.status_bar = tk.Frame(self.root, bg=self.bg_color, height=24)
         self.status_bar.pack(fill='x', side='bottom')
         self.status_label = tk.Label(self.status_bar, text="Ready",
-                                     bg=self.bg_color, fg=self.fg_color,
-                                     font=("Segoe UI", 9))
+                                    bg=self.bg_color, fg=self.fg_color,
+                                    font=("Segoe UI", 9))
         self.status_label.pack(side='left', padx=15)
 
     def create_first_tab(self):
@@ -161,17 +181,17 @@ class ModernNotepad:
     def new_tab(self, content="", title="Untitled", file_path=None):
         tab_frame = tk.Frame(self.notebook, bg=self.bg_color)
         text_area = ScrolledText(tab_frame,
-                                 wrap=tk.WORD,
-                                 bg=self.text_bg,
-                                 fg=self.fg_color,
-                                 insertbackground=self.fg_color,
-                                 font=("Cascadia Code", 12),
-                                 padx=15,
-                                 pady=15,
-                                 highlightthickness=0,
-                                 insertwidth=2,
-                                 selectbackground=self.highlight_color,
-                                 yscrollcommand=lambda *args: self.update_status())
+                                wrap=tk.WORD,
+                                bg=self.text_bg,
+                                fg=self.fg_color,
+                                insertbackground=self.fg_color,
+                                font=("Cascadia Code", 12),
+                                padx=15,
+                                pady=15,
+                                highlightthickness=0,
+                                insertwidth=2,
+                                selectbackground=self.accent_color,
+                                yscrollcommand=lambda *args: self.update_status())
         text_area.pack(fill='both', expand=True)
         text_area.insert("1.0", content)
         text_area.bind("<<Modified>>", self.on_text_modified)
@@ -179,38 +199,70 @@ class ModernNotepad:
         text_area.bind("<KeyRelease>", self.update_status)
         text_area.bind("<ButtonRelease>", self.update_status)
 
-        # Tab Header
-        tab_header = tk.Frame(self.notebook, bg=self.tab_bg)
-        close_btn = tk.Label(tab_header, text="×", bg=self.tab_bg,
-                             fg=self.fg_color, font=("Arial", 16), cursor="hand2")
-        close_btn.pack(side='right', padx=(0, 10))
-        title_label = tk.Label(tab_header, text=title, bg=self.tab_bg,
-                               fg=self.fg_color, font=("Segoe UI", 10))
-        title_label.pack(side='left', padx=(10, 0))
+        # Custom Tab Button
+        tab_btn = tk.Label(self.tab_bar, text=title, bg=self.tab_bg, fg=self.fg_color,
+                          font=("Segoe UI", 10), padx=15, pady=8, cursor="hand2")
+        tab_btn.pack(side='left')
+        close_btn = tk.Label(tab_btn, text="×", bg=self.tab_bg, fg=self.fg_color,
+                            font=("Segoe UI", 12), padx=8, cursor="hand2")
+        close_btn.pack(side='right')
 
-        close_btn.bind("<Enter>", lambda e: e.widget.config(fg="#ffffff"))
-        close_btn.bind("<Leave>", lambda e: e.widget.config(fg=self.fg_color))
+        # Bindings
+        tab_btn.bind("<Button-1>", lambda e: self.select_tab(tab_frame))
         close_btn.bind("<Button-1>", lambda e: self.close_tab(tab_frame))
+        close_btn.bind("<Enter>", lambda e: e.widget.config(bg=self.close_hover, fg="white"))
+        close_btn.bind("<Leave>", lambda e: e.widget.config(bg=self.tab_bg, fg=self.fg_color))
 
-        self.notebook.add(tab_frame, text=title, sticky='nsew')
-        self.notebook.select(tab_frame)
+        self.notebook.add(tab_frame, text=title)
+        self.notebook.hide(tab_frame)  # Hide native tab
 
         tab_data = {
             "text_area": text_area,
             "file_path": file_path,
             "modified": False,
             "title": title,
-            "tab_header": tab_header
+            "tab_btn": tab_btn,
+            "close_btn": close_btn
         }
         tab_frame.tab_data = tab_data
-
+        self.tabs.append(tab_frame)
+        self.select_tab(tab_frame)
         return tab_frame
 
+    def select_tab(self, tab):
+        for t in self.tabs:
+            if t == tab:
+                t.tab_data["tab_btn"].config(bg=self.selected_tab_color)
+                self.notebook.select(t)
+            else:
+                t.tab_data["tab_btn"].config(bg=self.tab_bg)
+        self.current_tab = tab
+        self.update_status()
+
+    def close_tab(self, tab):
+        if isinstance(tab, str):
+            tab = self.notebook.nametowidget(tab)
+        if len(self.tabs) == 1:
+            self.root.destroy()
+            return
+
+        tab_data = tab.tab_data
+        content = tab_data["text_area"].get("1.0", "end-1c")
+
+        if tab_data["modified"] and content.strip():
+            if not self.confirm_unsaved_changes(tab):
+                return
+
+        self.tabs.remove(tab)
+        tab_data["tab_btn"].destroy()
+        self.notebook.forget(tab)
+        if self.tabs:
+            self.select_tab(self.tabs[-1])
+        else:
+            self.root.destroy()
+
     def get_current_tab_data(self):
-        current_tab = self.notebook.select()
-        if not current_tab:
-            return None
-        return self.notebook.nametowidget(current_tab).tab_data
+        return self.current_tab.tab_data if self.current_tab else None
 
     def update_status(self, event=None):
         current_tab = self.get_current_tab_data()
@@ -226,28 +278,19 @@ class ModernNotepad:
             event.widget.edit_modified(False)
             self.update_tab_title(current_tab)
 
-    def on_tab_changed(self, event):
+    def update_tab_title(self, tab_data):
+        title = tab_data["title"]
+        if tab_data["modified"]:
+            title += " *"
+        tab_data["tab_btn"].config(text=title)
+
+    def on_tab_changed(self, event=None):
         current_tab = self.get_current_tab_data()
         if current_tab:
             title = current_tab["title"]
             if current_tab["modified"]:
                 title += " *"
             self.root.title(f"{title} - Modern Notepad")
-        self.update_status()
-
-    def close_tab(self, tab):
-        if self.notebook.index("end") <= 1:
-            self.root.destroy()
-            return
-
-        tab_data = tab.tab_data
-        content = tab_data["text_area"].get("1.0", "end-1c")
-
-        if tab_data["modified"] and content.strip():
-            if not self.confirm_unsaved_changes(tab):
-                return
-
-        self.notebook.forget(tab)
 
     def confirm_unsaved_changes(self, tab):
         response = messagebox.askyesnocancel(
@@ -304,13 +347,9 @@ class ModernNotepad:
             self.save_file(tab_data)
             self.update_tab_title(tab_data)
 
-    def update_tab_title(self, tab_data):
-        tab_data["tab_header"].children["!label"].config(text=tab_data["title"])
-        self.on_tab_changed(None)
-
     def show_context_menu(self, event):
         context_menu = tk.Menu(self.root, tearoff=0,
-                               bg=self.accent_color, fg=self.fg_color)
+                              bg=self.accent_color, fg=self.fg_color)
         context_menu.add_command(label="Cut", command=self.cut_text)
         context_menu.add_command(label="Copy", command=self.copy_text)
         context_menu.add_command(label="Paste", command=self.paste_text)
@@ -321,7 +360,7 @@ class ModernNotepad:
         self.root.bind("<Control-o>", lambda e: self.open_file())
         self.root.bind("<Control-s>", lambda e: self.save_file())
         self.root.bind("<Control-S>", lambda e: self.save_as_file())
-        self.root.bind("<Control-w>", lambda e: self.close_tab(self.notebook.select()))
+        self.root.bind("<Control-w>", lambda e: self.close_tab(self.current_tab))
         self.root.bind("<Control-t>", lambda e: self.new_tab())
 
         text_commands = {
@@ -378,7 +417,6 @@ class ModernNotepad:
             self.root.state('zoomed')
             self.max_btn.config(text="🗗")
         self.is_maximized = not self.is_maximized
-
 
 if __name__ == "__main__":
     root = tk.Tk()
