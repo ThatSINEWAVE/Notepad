@@ -1,0 +1,11 @@
+{
+    "theme": "dark",
+    "font": "Courier New",
+    "font_size": 12,
+    "tab_size": 4,
+    "word_wrap": true,
+    "show_line_numbers": true,
+    "recent_files": [],
+    "highlight_current_line": true,
+    "custom_settings_path": null
+}
