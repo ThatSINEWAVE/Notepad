@@ -2,22 +2,48 @@
 
 # Notepad
 
-Notepad is a modern, customizable text editor built using Python and Tkinter, designed to replace the default Windows Notepad. With features such as multiple tabs, a custom theme, and enhanced user interface, this application aims to provide a more functional and visually appealing experience for users.
+**A Modern Python-Powered Text Editor**  
+*Work in Progress - Community Testing Phase*  
+
+![Preview](https://raw.githubusercontent.com/ThatSINEWAVE/Notepad/refs/heads/main/.github/SCREENSHOTS/Notepad.png?token=GHSAT0AAAAAACSGFGDFKUIGLC6B7O5423QCZ6GD27Q)  
+*Customizable dark/light themes with tabbed interface*
 
 </div>
 
-## Features
+## 🚧 Project Status
+This project is actively under development. Core functionality is stable, but expect occasional updates and improvements.  
+**No pre-compiled .exe available yet** - users can:
+- Run directly via Python (`python notepad.py`)
+- [Compile it on your own using PyInstaller](#compiling-to-exe)
 
-- **Tabbed Interface**: Supports multiple documents opened in tabs.
-- **Customizable Theme**: A sleek dark theme with a modern design and customizable colors.
-- **File Operations**: Open, save, and save as for text files.
-- **Text Editing**: Standard text editing features with keyboard shortcuts for cut, copy, paste, and select-all.
-- **Drag & Drop Window**: The title bar can be dragged to move the window around.
-- **Window Controls**: Custom buttons for minimizing, maximizing, and closing the application window.
-- **Status Bar**: Displays the current line, column, and UTF-8 encoding of the text.
-- **Context Menu**: Right-click to access common text operations such as cut, copy, and paste.
-- **File Type Support**: Works with `.txt` files and other file formats.
-- **Responsive Design**: The window size is adjustable and supports different screen resolutions.
+## ✨ Features
+
+### Editor Core
+- **Multi-Tab Interface** with unsaved changes indicators
+- **Dark/Light Themes** - VS Code-inspired color schemes
+- **Advanced Text Editing**:
+  - Line numbers & current line highlighting
+  - Customizable tab spacing (2/4/8 spaces)
+  - Word wrap toggle
+  - Auto-indent support
+  - Undo/Redo history
+
+### Productivity Tools
+- **Find/Replace** with regex support
+- **Auto-Save** (every 2 minutes)
+- **Recent Files** list (last 10 files)
+- **Status Bar** with:
+  - Live position tracking (line/column)
+  - Word counter
+  - Encoding display
+  - Modification status
+
+### UX Enhancements
+- Custom title bar with Windows 11-style controls
+- Drag-to-move window functionality
+- Right-click context menu (Cut/Copy/Paste/Select All)
+- System tray icon support
+- Customizable monospace fonts (Consolas, Fira Code, etc.)
 
 <div align="center">
 
@@ -25,51 +51,32 @@ Notepad is a modern, customizable text editor built using Python and Tkinter, de
 
 </div>
 
-## Installation
+## 📥 Installation
 
-1. Ensure that Python 3.x is installed on your machine.
-2. Install required libraries by running the following command:
+### Requirements
+- Python 3.10+
+- Pillow library
 
-   ```bash
-   pip install pillow
-   ```
+### Quick Start
+```bash
+# Clone repository
+git clone https://github.com/yourusername/enhanced-notepad.git
+cd enhanced-notepad
 
-   This will install the Pillow library, which is used for handling images like the app icon.
+# Install dependencies
+pip install -r requirements.txt
 
-3. Download or clone the repository:
+# Launch application
+python notepad.py
+```
 
-   ```bash
-   git clone https://github.com/yourusername/notepad.git
-   ```
-
-4. Navigate to the project directory and run the application:
-
-   ```bash
-   python notepad.py
-   ```
-
-## Usage
-
-1. **Opening a New File**: Press `Ctrl + N` to open a new tab.
-2. **Opening an Existing File**: Press `Ctrl + O` to open a file from your file system.
-3. **Saving a File**: Press `Ctrl + S` to save the current file. If it is a new file, it will prompt you to choose a location.
-4. **Save As**: Press `Ctrl + Shift + S` to save the file with a new name.
-5. **Close a Tab**: Press `Ctrl + W` to close the current tab. If there are unsaved changes, it will prompt to save.
-6. **Basic Text Editing**: Use `Ctrl + C`, `Ctrl + X`, and `Ctrl + V` for copy, cut, and paste operations respectively.
-7. **Search Text**: Use the `Edit > Find` menu option to search for specific text in the document (not yet implemented in the code, but can be added).
-
-## Keybindings
-
-- **Ctrl + N**: New Tab
-- **Ctrl + O**: Open File
-- **Ctrl + S**: Save File
-- **Ctrl + Shift + S**: Save As
-- **Ctrl + W**: Close Tab
-- **Ctrl + T**: New Tab
-- **Ctrl + X**: Cut Text
-- **Ctrl + C**: Copy Text
-- **Ctrl + V**: Paste Text
-- **Ctrl + A**: Select All Text
+## 🔧 Compiling to EXE
+To create a standalone executable (Windows):
+```bash
+pip install pyinstaller
+pyinstaller --onefile --windowed --icon=icon.ico notepad.py
+```
+*Compiled binaries will appear in `/dist` directory*
 
 <div align="center">
 
@@ -77,17 +84,39 @@ Notepad is a modern, customizable text editor built using Python and Tkinter, de
 
 </div>
 
+## ⌨️ Keybindings
 
-## Customization
+| Command              | Shortcut          |
+|----------------------|-------------------|
+| New Tab              | `Ctrl + N`        |
+| Open File            | `Ctrl + O`        |
+| Save File            | `Ctrl + S`        |
+| Save As              | `Ctrl + Shift + S`|
+| Find Text            | `Ctrl + F`        |
+| Replace Text         | `Ctrl + H`        |
+| Next Tab             | `Ctrl + Tab`      |
+| Previous Tab         | `Ctrl + Shift + Tab`|
+| Toggle Word Wrap     | `Ctrl + Alt + W`  |
 
-- **Colors**: The theme of the editor is customizable through the code. Adjust the following variables to change the appearance:
-  - `bg_color`: Background color for the editor.
-  - `title_bar_color`: Color of the title bar.
-  - `text_bg`: Background color for the text area.
-  - `fg_color`: Foreground (text) color.
-  - `highlight_color`: Color for highlighted text.
+*Full list available in Help > Keyboard Shortcuts*
 
-- **Icons**: The app icon can be changed by replacing the `icon.ico` file in the project directory.
+## 🎨 Customization
+Modify `settings.json` or use in-app menus to:
+- Switch between dark/light themes
+- Change editor font (supports 20+ monospace fonts)
+- Adjust font size (8-24px range)
+- Configure tab behavior
+- Set custom settings storage location
+
+```json
+{
+    "theme": "dark",
+    "font": "Fira Code",
+    "font_size": 14,
+    "tab_size": 4,
+    "word_wrap": true
+}
+```
 
 ## Contributing
 
