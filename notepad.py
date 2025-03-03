@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import json
+import shutil
 from datetime import datetime
 
 
@@ -148,15 +149,32 @@ class EnhancedNotepad:
             "recent_files": [],
             "auto_indent": True,
             "highlight_current_line": True,
+            "custom_settings_path": None  # New setting for custom location
         }
 
         try:
-            settings_path = os.path.join(
-                os.path.expanduser("~"), ".enhanced_notepad_settings.json"
-            )
-            if os.path.exists(settings_path):
-                with open(settings_path, "r") as f:
-                    return {**default_settings, **json.load(f)}
+            # First check default location
+            if getattr(sys, 'frozen', False):
+                base_path = os.path.dirname(sys.executable)
+            else:
+                base_path = os.path.dirname(os.path.abspath(__file__))
+
+            default_path = os.path.join(base_path, "settings.json")
+
+            if os.path.exists(default_path):
+                with open(default_path, "r") as f:
+                    loaded = json.load(f)
+                    # Merge with defaults
+                    settings = {**default_settings, **loaded}
+
+                    # Check if custom path exists
+                    if settings["custom_settings_path"] and os.path.exists(settings["custom_settings_path"]):
+                        custom_path = os.path.join(settings["custom_settings_path"], "settings.json")
+                        if os.path.exists(custom_path):
+                            with open(custom_path, "r") as cf:
+                                custom_settings = json.load(cf)
+                                settings.update(custom_settings)
+                    return settings
         except Exception as e:
             print(f"Error loading settings: {e}")
 
@@ -165,26 +183,81 @@ class EnhancedNotepad:
     def save_settings(self):
         """Save user settings to config file"""
         try:
-            settings_path = os.path.join(
-                os.path.expanduser("~"), ".enhanced_notepad_settings.json"
-            )
-            # Update recent files before saving
-            self.settings["recent_files"] = self.get_recent_files()
-            self.settings["theme"] = self.current_theme
-            self.settings["font"] = self.current_font
-            self.settings["font_size"] = self.current_font_size
+            # Create a safe copy of settings without Tkinter objects
+            saveable_settings = {
+                "theme": self.current_theme,
+                "font": self.current_font,
+                "font_size": self.current_font_size,
+                "tab_size": self.tab_size,
+                "word_wrap": self.settings.get("word_wrap", True),
+                "show_line_numbers": self.show_line_numbers,
+                "recent_files": self.get_recent_files(),
+                "highlight_current_line": self.settings.get("highlight_current_line", True),
+                "custom_settings_path": self.settings.get("custom_settings_path")
+            }
 
-            with open(settings_path, "w") as f:
-                json.dump(self.settings, f)
+            # Determine save path
+            if self.settings.get("custom_settings_path"):
+                save_dir = self.settings["custom_settings_path"]
+                if not os.path.exists(save_dir):
+                    os.makedirs(save_dir)
+                save_path = os.path.join(save_dir, "settings.json")
+            else:
+                if getattr(sys, 'frozen', False):
+                    save_dir = os.path.dirname(sys.executable)
+                else:
+                    save_dir = os.path.dirname(os.path.abspath(__file__))
+                save_path = os.path.join(save_dir, "settings.json")
+
+            # Save to determined path
+            with open(save_path, "w") as f:
+                json.dump(saveable_settings, f, indent=4)
+
         except Exception as e:
             print(f"Error saving settings: {e}")
+
+    def choose_settings_location(self):
+        """Let user choose where to store settings"""
+        path = filedialog.askdirectory(
+            title="Select Settings Directory",
+            initialdir=os.path.expanduser("~")
+        )
+        if path:
+            try:
+                # Save new location to default settings
+                self.settings["custom_settings_path"] = path
+                default_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "settings.json")
+                with open(default_path, "w") as f:
+                    json.dump({"custom_settings_path": path}, f)
+
+                # Migrate existing settings
+                if os.path.exists(default_path):
+                    shutil.copy(default_path, os.path.join(path, "settings.json"))
+
+                messagebox.showinfo(
+                    "Settings Location",
+                    f"Settings will now be stored in:\n{path}\nRestart the application to apply changes."
+                )
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not change settings location: {str(e)}")
+
+    def get_settings_path(self):
+        """Determine correct settings path"""
+        if "custom_settings_path" in self.settings:
+            custom_path = os.path.join(self.settings["custom_settings_path"], "settings.json")
+            if os.path.exists(os.path.dirname(custom_path)):
+                return custom_path
+        # Fallback to default location
+        if getattr(sys, 'frozen', False):
+            return os.path.join(os.path.dirname(sys.executable), "settings.json")
+        return os.path.join(os.path.dirname(__file__), "settings.json")
 
     def get_recent_files(self):
         """Get list of recent files from open tabs"""
         recent_files = []
         for tab in self.tabs:
-            if tab.tab_data["file_path"]:
-                recent_files.append(tab.tab_data["file_path"])
+            if tab["file_path"]:  # Changed from tab.tab_data["file_path"]
+                recent_files.append(tab["file_path"])
 
         # Add existing recent files that aren't currently open
         for file_path in self.settings.get("recent_files", []):
@@ -295,7 +368,7 @@ class EnhancedNotepad:
 
         title_label = tk.Label(
             self.drag_area,
-            text="Enhanced Notepad",
+            text="Enhanced Notepad (because fuck Microsoft)",
             bg=self.colors["title_bar_color"],
             fg=self.colors["fg_color"],
             font=("Segoe UI Semibold", 10),
@@ -651,13 +724,13 @@ class EnhancedNotepad:
 
         # Update font for all text areas
         for tab in self.tabs:
-            text_widget = tab.tab_data["text_area"]
+            text_widget = tab["text_area"]  # Changed from tab.tab_data["text_area"]
             current_size = text_widget.cget("font").split()[-1]
             text_widget.configure(font=(font_name, self.current_font_size))
 
             # Also update line numbers if enabled
-            if hasattr(tab, "line_numbers") and tab.line_numbers:
-                tab.line_numbers.configure(font=(font_name, self.current_font_size))
+            if hasattr(tab["text_area"], "line_numbers") and tab["text_area"].line_numbers:
+                tab["text_area"].line_numbers.configure(font=(font_name, self.current_font_size))
 
         self.save_settings()
 
@@ -668,12 +741,12 @@ class EnhancedNotepad:
 
         # Update font size for all text areas
         for tab in self.tabs:
-            text_widget = tab.tab_data["text_area"]
+            text_widget = tab["text_area"]  # Changed from tab.tab_data["text_area"]
             text_widget.configure(font=(self.current_font, size))
 
             # Also update line numbers if enabled
-            if hasattr(tab, "line_numbers") and tab.line_numbers:
-                tab.line_numbers.configure(font=(self.current_font, size))
+            if hasattr(tab["text_area"], "line_numbers") and tab["text_area"].line_numbers:
+                tab["text_area"].line_numbers.configure(font=(self.current_font, size))
 
         self.save_settings()
 
