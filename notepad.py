@@ -20,8 +20,12 @@ def update_tab_title(tab_data):
 
 class EnhancedNotepad:
     def __init__(self, root):
+        self.encoding_label = None
+        self.word_count_label = None
+        self.modified_label = None
+        self.mode_label = None
         self.root = root
-        self.root.title("Enhanced Notepad")
+        self.root.title("Notepad by ThatSINEWAVE")
         self.root.geometry("1200x800")
 
         # Load user settings or use defaults
@@ -368,7 +372,7 @@ class EnhancedNotepad:
 
         title_label = tk.Label(
             self.drag_area,
-            text="Enhanced Notepad (because fuck Microsoft)",
+            text="Notepad by ThatSINEWAVE",
             bg=self.colors["title_bar_color"],
             fg=self.colors["fg_color"],
             font=("Segoe UI Semibold", 10),
