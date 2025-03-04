@@ -5,7 +5,7 @@
 **A Modern Python-Powered Text Editor**  
 *Work in Progress - Community Testing Phase*  
 
-![Preview](https://raw.githubusercontent.com/ThatSINEWAVE/Notepad/refs/heads/main/.github/SCREENSHOTS/Notepad.png?token=GHSAT0AAAAAACSGFGDFKUIGLC6B7O5423QCZ6GD27Q)  
+![Preview](https://github.com/ThatSINEWAVE/Notepad/blob/main/.github/SCREENSHOTS/Notepad.png)  
 *Customizable dark/light themes with tabbed interface*
 
 </div>
